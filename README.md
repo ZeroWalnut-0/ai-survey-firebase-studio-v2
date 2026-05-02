@@ -4,6 +4,8 @@
 
 이 문서는 프로젝트 로컬 환경 설정, 실행 방법, 주요 스크립트 등 프로젝트 전반에 대한 가이드를 제공합니다.
 
+> **Note:** 본 프로토타입은 `AI-Survey-app/ui-proto-plan/v0.3.1_firebase_studio_master_prompt.md` 파일의 마스터 프롬프트를 기반으로 구현되었습니다.
+
 ## 🛠 기술 스택 (Tech Stack)
 
 - **Frontend:** Next.js 15, React 19, Tailwind CSS, shadcn/ui
