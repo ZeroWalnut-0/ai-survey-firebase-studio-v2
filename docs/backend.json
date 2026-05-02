@@ -1,0 +1,761 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents application-specific data for a user, managed by an external authentication system. This entity does not store authentication credentials like passwords, adhering to security best practices.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity. This ID is provided by the external authentication system."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address, used for communication and display purposes within the application (not an authentication credential).",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "User's display name or full name."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role within the application, influencing access and permissions (e.g., 'creator', 'admin', 'respondent'). (Related to UI-050)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when this user profile was first created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when this user profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name",
+        "role",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Represents an uploaded document used as a source for AI-driven survey generation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Document entity."
+        },
+        "creatorId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who uploaded this document. (Relationship: UserProfile 1:N Document)"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The original file name of the uploaded document."
+        },
+        "fileType": {
+          "type": "string",
+          "description": "The type or extension of the uploaded file (e.g., 'HWPX', 'Word', 'PDF')."
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "Timestamp when the document was uploaded. (Related to UI-010)",
+          "format": "date-time"
+        },
+        "parsingStatus": {
+          "type": "string",
+          "description": "The current status of the document parsing process (e.g., 'pending', 'in_progress', 'completed', 'failed'). (Related to UI-011)"
+        },
+        "contentPreview": {
+          "type": "string",
+          "description": "A short textual preview of the document's content, extracted after parsing."
+        }
+      },
+      "required": [
+        "id",
+        "creatorId",
+        "fileName",
+        "fileType",
+        "uploadDate",
+        "parsingStatus"
+      ]
+    },
+    "Survey": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Survey",
+      "type": "object",
+      "description": "Represents a survey created using the AI platform, containing its core metadata and configuration.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Survey entity."
+        },
+        "creatorId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who created this survey. (Relationship: UserProfile 1:N Survey)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the survey."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description explaining the purpose or topic of the survey."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current operational status of the survey (e.g., 'draft', 'active', 'closed', 'archived')."
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "Timestamp when the survey was initially created.",
+          "format": "date-time"
+        },
+        "lastModifiedDate": {
+          "type": "string",
+          "description": "Timestamp when the survey's definition was last modified. (Related to UI-020)",
+          "format": "date-time"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Optional date and time when the survey is scheduled to become active for respondents.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "Optional date and time when the survey is scheduled to automatically close.",
+          "format": "date-time"
+        },
+        "sourceDocumentId": {
+          "type": "string",
+          "description": "Optional reference to the Document from which this survey was generated. (Relationship: Document 1:N Survey)"
+        },
+        "sourcePrompt": {
+          "type": "string",
+          "description": "The natural language prompt (if any) used to create or influence this survey's generation. (Related to UI-024)"
+        },
+        "accessUrl": {
+          "type": "string",
+          "description": "The public URL where respondents can access and complete the survey. (Related to UI-030)",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "creatorId",
+        "title",
+        "description",
+        "status",
+        "creationDate",
+        "lastModifiedDate",
+        "accessUrl"
+      ]
+    },
+    "Question": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Question",
+      "type": "object",
+      "description": "Represents an individual question within a survey, including its type, text, and configuration.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Question entity."
+        },
+        "surveyId": {
+          "type": "string",
+          "description": "Reference to the Survey this question belongs to. (Relationship: Survey 1:N Question)"
+        },
+        "order": {
+          "type": "number",
+          "description": "The numerical order in which this question appears within its survey. (Related to UI-021)"
+        },
+        "questionText": {
+          "type": "string",
+          "description": "The actual text content of the question."
+        },
+        "questionType": {
+          "type": "string",
+          "description": "The type of question (e.g., 'single_choice', 'multiple_choice', 'open_text', 'likert_scale'). (Related to UI-021)"
+        },
+        "isRequired": {
+          "type": "boolean",
+          "description": "Boolean indicating whether answering this question is mandatory for respondents."
+        },
+        "skipLogicTarget": {
+          "type": "string",
+          "description": "A textual representation of the skip logic rule (e.g., 'If choice A, go to Q5') or a reference to a target question. (Related to UI-023)"
+        },
+        "aiSuggestionApplied": {
+          "type": "boolean",
+          "description": "Boolean indicating if an AI-generated improvement suggestion has been applied to this question. (Related to UI-022)"
+        }
+      },
+      "required": [
+        "id",
+        "surveyId",
+        "order",
+        "questionText",
+        "questionType",
+        "isRequired"
+      ]
+    },
+    "AnswerOption": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AnswerOption",
+      "type": "object",
+      "description": "Represents a predefined choice for single-choice, multiple-choice, or Likert scale questions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AnswerOption entity."
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to the Question this option belongs to. (Relationship: Question 1:N AnswerOption)"
+        },
+        "optionText": {
+          "type": "string",
+          "description": "The text displayed for this answer option to the respondent. (Related to UI-021)"
+        },
+        "value": {
+          "type": "string",
+          "description": "The underlying value associated with this option, often numerical for scoring or branching logic."
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order of this option within its question."
+        }
+      },
+      "required": [
+        "id",
+        "questionId",
+        "optionText",
+        "value",
+        "order"
+      ]
+    },
+    "SurveyResponse": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SurveyResponse",
+      "type": "object",
+      "description": "Represents a complete set of answers submitted by a single respondent for a specific survey.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SurveyResponse entity."
+        },
+        "surveyId": {
+          "type": "string",
+          "description": "Reference to the Survey that was responded to. (Relationship: Survey 1:N SurveyResponse)"
+        },
+        "respondentIdentifier": {
+          "type": "string",
+          "description": "A unique identifier for the respondent (e.g., anonymous UUID, or a UserProfile ID if a logged-in user). (Related to UI-051)"
+        },
+        "submissionDate": {
+          "type": "string",
+          "description": "Timestamp when the complete response was submitted. (Related to UI-051)",
+          "format": "date-time"
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "The IP address of the respondent at the time of submission (use with privacy considerations)."
+        },
+        "deviceInfo": {
+          "type": "string",
+          "description": "Information about the device and browser used by the respondent."
+        },
+        "isFlagged": {
+          "type": "boolean",
+          "description": "Boolean indicating if this response has been flagged for low quality by the AI Data Bouncer. (Relationship: SurveyResponse 1:N ResponseQualityFlag)"
+        },
+        "status": {
+          "type": "string",
+          "description": "The processing status of the response (e.g., 'completed', 'incomplete', 'quarantined')."
+        }
+      },
+      "required": [
+        "id",
+        "surveyId",
+        "respondentIdentifier",
+        "submissionDate",
+        "isFlagged",
+        "status"
+      ]
+    },
+    "Answer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Answer",
+      "type": "object",
+      "description": "Represents a single answer provided by a respondent to a specific question within a survey response.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Answer entity."
+        },
+        "surveyResponseId": {
+          "type": "string",
+          "description": "Reference to the SurveyResponse this answer is part of. (Relationship: SurveyResponse 1:N Answer)"
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to the Question this answer pertains to. (Relationship: Question 1:N Answer)"
+        },
+        "responseText": {
+          "type": "string",
+          "description": "The textual answer provided for 'open_text' type questions."
+        },
+        "chosenOptionIds": {
+          "type": "array",
+          "description": "An array of AnswerOption IDs selected by the respondent for 'single_choice' or 'multiple_choice' questions. (Relationship: Answer N:N AnswerOption)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "likertScaleValue": {
+          "type": "number",
+          "description": "The numerical value selected for 'likert_scale' type questions."
+        },
+        "submittedAt": {
+          "type": "string",
+          "description": "Timestamp when this specific answer was recorded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "surveyResponseId",
+        "questionId"
+      ]
+    },
+    "ResponseQualityFlag": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ResponseQualityFlag",
+      "type": "object",
+      "description": "Records details about a detected low-quality response, typically identified by the AI Data Bouncer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ResponseQualityFlag entity."
+        },
+        "surveyResponseId": {
+          "type": "string",
+          "description": "Reference to the SurveyResponse that was flagged. (Relationship: SurveyResponse 1:N ResponseQualityFlag)"
+        },
+        "flagType": {
+          "type": "string",
+          "description": "The category of the quality issue detected (e.g., 'speed_trap', 'straight_lining', 'inconsistent_answer'). (Related to UI-051)"
+        },
+        "reasonDetail": {
+          "type": "string",
+          "description": "A more detailed explanation or the specific pattern that triggered the flag."
+        },
+        "detectionDate": {
+          "type": "string",
+          "description": "Timestamp when the quality issue was detected.",
+          "format": "date-time"
+        },
+        "isManualOverride": {
+          "type": "boolean",
+          "description": "Boolean indicating if an administrator has manually overridden the flag's status."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the flag (e.g., 'active', 'quarantined', 'restored', 'ignored')."
+        }
+      },
+      "required": [
+        "id",
+        "surveyResponseId",
+        "flagType",
+        "reasonDetail",
+        "detectionDate",
+        "status"
+      ]
+    },
+    "UserQuota": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserQuota",
+      "type": "object",
+      "description": "Tracks the usage limits and current consumption of various resources (e.g., survey creation, data exports) for a user account.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserQuota entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile this quota entry belongs to. (Relationship: UserProfile 1:N UserQuota)"
+        },
+        "quotaType": {
+          "type": "string",
+          "description": "The type of resource being limited (e.g., 'survey_creation_count', 'question_generation_tokens', 'data_export_count')."
+        },
+        "limit": {
+          "type": "number",
+          "description": "The maximum allowed usage for this specific quota type."
+        },
+        "currentUsage": {
+          "type": "number",
+          "description": "The current consumption against the defined limit for this quota type. (Related to UI-052)"
+        },
+        "unit": {
+          "type": "string",
+          "description": "The unit of measurement for the quota (e.g., 'surveys', 'questions', 'tokens', 'downloads', 'records')."
+        },
+        "lastResetDate": {
+          "type": "string",
+          "description": "Timestamp when the quota was last reset or refreshed, if applicable.",
+          "format": "date-time"
+        },
+        "nextResetDate": {
+          "type": "string",
+          "description": "Timestamp when the quota is scheduled to be reset next, if applicable.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "quotaType",
+        "limit",
+        "currentUsage",
+        "unit"
+      ]
+    },
+    "PaymentTransaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PaymentTransaction",
+      "type": "object",
+      "description": "Records details of payment transactions made by users for premium features or data access.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PaymentTransaction entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who initiated the transaction. (Relationship: UserProfile 1:N PaymentTransaction)"
+        },
+        "transactionDate": {
+          "type": "string",
+          "description": "Timestamp when the transaction occurred. (Related to UI-053)",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The monetary amount of the transaction."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency code of the transaction (e.g., 'KRW', 'USD')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the payment (e.g., 'pending', 'completed', 'failed', 'refunded')."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The method used for the payment (e.g., 'TossPay', 'CreditCard'). (Related to UI-041)"
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the item or service purchased (e.g., 'Survey Data Package'). (Related to UI-041)"
+        },
+        "purchasedSurveyId": {
+          "type": "string",
+          "description": "Optional reference to a specific Survey for which data access was purchased. (Relationship: Survey 1:N PaymentTransaction)"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "transactionDate",
+        "amount",
+        "currency",
+        "status",
+        "paymentMethod",
+        "description"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/userProfiles/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores application-specific profile data for each user. Access is restricted to the owning user and administrators. The 'role' field within this document can be used for application-level permissions, while a separate `/roles_admin` collection is used for rule-level global admin checks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching `request.auth.uid`."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{adminId}",
+        "definition": {
+          "entityName": "roles_admin",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "This collection identifies users with global administrator privileges using an 'existence over content' model. An administrator's UID must exist as a document ID in this collection to grant rule-level admin access.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The unique identifier of an administrator user, matching `request.auth.uid`."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/documents/{documentId}",
+        "definition": {
+          "entityName": "Document",
+          "schema": {
+            "$ref": "#/backend/entities/Document"
+          },
+          "description": "Private collection for user-uploaded documents. Access is restricted to the document's creator. The 'creatorId' field in the document matches the path parameter 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who uploaded the document."
+            },
+            {
+              "name": "documentId",
+              "description": "The unique identifier of the document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/surveys/{surveyId}",
+        "definition": {
+          "entityName": "Survey",
+          "schema": {
+            "$ref": "#/backend/entities/Survey"
+          },
+          "description": "Private collection for surveys created by a user, including drafts and editable states. Access is restricted to the survey's creator. The 'creatorId' field in the document matches the path parameter 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who created the survey."
+            },
+            {
+              "name": "surveyId",
+              "description": "The unique identifier of the survey."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/surveys/{surveyId}/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Nested collection for questions belonging to a user's survey. These are the editable questions. Each document includes denormalized 'creatorId' and 'surveyId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the parent survey."
+            },
+            {
+              "name": "surveyId",
+              "description": "The unique identifier of the parent survey."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/surveys/{surveyId}/questions/{questionId}/answerOptions/{optionId}",
+        "definition": {
+          "entityName": "AnswerOption",
+          "schema": {
+            "$ref": "#/backend/entities/AnswerOption"
+          },
+          "description": "Nested collection for answer options belonging to a specific question within a user's survey. Each document includes denormalized 'creatorId', 'surveyId', and 'questionId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the grandparent survey."
+            },
+            {
+              "name": "surveyId",
+              "description": "The unique identifier of the grandparent survey."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the parent question."
+            },
+            {
+              "name": "optionId",
+              "description": "The unique identifier of the answer option."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/publishedSurveys/{surveyId}",
+        "definition": {
+          "entityName": "Survey",
+          "schema": {
+            "$ref": "#/backend/entities/Survey"
+          },
+          "description": "Public, read-only collection for active surveys. Documents here are denormalized copies of private surveys once they are published. They include 'creatorId' for authorization independence when linking to responses, and embed 'questions' and 'answerOptions' as arrays for single-document reads by respondents.",
+          "params": [
+            {
+              "name": "surveyId",
+              "description": "The unique identifier of the published survey."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{creatorId}/surveys/{surveyId}/responses/{responseId}",
+        "definition": {
+          "entityName": "SurveyResponse",
+          "schema": {
+            "$ref": "#/backend/entities/SurveyResponse"
+          },
+          "description": "Nested collection for survey responses. Responses are directly linked to the survey's creator. Each document includes denormalized 'creatorId' (from the parent survey) for authorization independence, allowing the creator to list and view their own responses.",
+          "params": [
+            {
+              "name": "creatorId",
+              "description": "The unique identifier of the user who created the survey."
+            },
+            {
+              "name": "surveyId",
+              "description": "The unique identifier of the parent survey."
+            },
+            {
+              "name": "responseId",
+              "description": "The unique identifier of the survey response."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{creatorId}/surveys/{surveyId}/responses/{responseId}/answers/{answerId}",
+        "definition": {
+          "entityName": "Answer",
+          "schema": {
+            "$ref": "#/backend/entities/Answer"
+          },
+          "description": "Nested collection for individual answers within a survey response. Each document includes denormalized 'creatorId' and 'surveyId' (from the parent response and grandparent survey) for authorization independence.",
+          "params": [
+            {
+              "name": "creatorId",
+              "description": "The unique identifier of the user who created the grandparent survey."
+            },
+            {
+              "name": "surveyId",
+              "description": "The unique identifier of the grandparent survey."
+            },
+            {
+              "name": "responseId",
+              "description": "The unique identifier of the parent survey response."
+            },
+            {
+              "name": "answerId",
+              "description": "The unique identifier of the answer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{creatorId}/surveys/{surveyId}/responses/{responseId}/flags/{flagId}",
+        "definition": {
+          "entityName": "ResponseQualityFlag",
+          "schema": {
+            "$ref": "#/backend/entities/ResponseQualityFlag"
+          },
+          "description": "Nested collection for AI-detected quality flags on survey responses. Each document includes denormalized 'creatorId' and 'surveyId' (from the parent response and grandparent survey) for authorization independence, allowing creators to manage flagged responses.",
+          "params": [
+            {
+              "name": "creatorId",
+              "description": "The unique identifier of the user who created the grandparent survey."
+            },
+            {
+              "name": "surveyId",
+              "description": "The unique identifier of the grandparent survey."
+            },
+            {
+              "name": "responseId",
+              "description": "The unique identifier of the parent survey response."
+            },
+            {
+              "name": "flagId",
+              "description": "The unique identifier of the response quality flag."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/quotas/{quotaId}",
+        "definition": {
+          "entityName": "UserQuota",
+          "schema": {
+            "$ref": "#/backend/entities/UserQuota"
+          },
+          "description": "Private collection for tracking user-specific resource quotas. Access is restricted to the owning user and administrators. The 'userId' field in the document matches the path parameter 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the quota."
+            },
+            {
+              "name": "quotaId",
+              "description": "The unique identifier for a specific quota entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/paymentTransactions/{transactionId}",
+        "definition": {
+          "entityName": "PaymentTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/PaymentTransaction"
+          },
+          "description": "Private collection for user-specific payment transactions. Access is restricted to the owning user and administrators. The 'userId' field in the document matches the path parameter 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who made the payment."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier of the payment transaction."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to adhere strictly to the core design principles, focusing on Authorization Independence, Structural Segregation, and consistent Access Modeling to ensure security, scalability, and debuggability. \n\n**Authorization Independence via Denormalization:** This is the critical principle for simplifying security rules by eliminating `get()` calls. For entities where access depends on a parent document's attributes, those attributes are explicitly denormalized into the child documents. For instance:\n*   `SurveyResponse` documents will include the `creatorId` (of the survey's creator) to enable direct ownership checks without needing to fetch the parent `Survey` document.\n*   `Answer` and `ResponseQualityFlag` documents, nested under `SurveyResponse`, will similarly denormalize the `creatorId` and `surveyId` from their lineage, allowing rules to directly verify `request.auth.uid` against these fields.\n*   For `publishedSurveys`, a separate top-level collection (`/publishedSurveys/{surveyId}`) is used. This document is a denormalized, read-optimized copy of the relevant `Survey` data. Crucially, it includes the `creatorId` for the original creator to manage responses and embeds `questions` and `answerOptions` as arrays, making it a single-read operation for anonymous respondents.\n\n**Structural Segregation for QAPs (Rules are not Filters):**\nCollections are designed so that all documents within a collection share the same security posture, which directly supports Queryable Access Patterns (QAPs) for secure `list` operations:\n*   **User-Owned Private Data:** Collections like `/users/{userId}/documents`, `/users/{userId}/surveys`, `/users/{userId}/quotas`, and `/users/{userId}/paymentTransactions` are strictly path-based. This structure ensures that `request.auth.uid` must match `{userId}` in the path, allowing users to `list` only their own data securely and efficiently.\n*   **Public/Respondent-Facing Data:** The `/publishedSurveys/{surveyId}` collection serves active surveys to anonymous respondents. This collection only contains surveys explicitly marked as 'active' or 'published' and is designed for read-only access. The embedding of `questions` and `answerOptions` within `publishedSurveys/{surveyId}` further optimizes respondent reads, as only a single document fetch is required.\n*   **Global Roles (DBAC):** `/roles_admin/{adminId}` uses an 'existence over content' model for admin roles. Checking if `request.auth.uid` exists in this collection is a simple, secure, and QAP-friendly way to grant administrative privileges.\n\nThis robust structure minimizes the complexity of security rules, as authorization checks primarily rely on `request.auth.uid` matching a path variable or a denormalized `creatorId` field directly within the accessed document, avoiding inefficient and insecure `get()` operations."
+  }
+}

@@ -1,0 +1,197 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * FIREBASE SECURITY RULES DOCUMENTATION
+     *
+     * Core Philosophy:
+     * This ruleset implements a strict Authorization-First model designed for a survey platform. 
+     * Security is enforced primarily through document ownership and structural path validation.
+     * 
+     * Data Structure:
+     * 1. User-Centric: Private data (documents, surveys, quotas) is nested under `/users/{userId}/...`.
+     * 2. Administrative: A dedicated `/roles_admin` collection manages global permissions via UID existence.
+     * 3. Publicly Accessible: Published surveys are copied to `/publishedSurveys` for respondent access.
+     * 4. Response Management: Survey responses are nested under the survey creator's path, allowing the 
+     *    creator to manage their own data while allowing respondents to submit answers.
+     *
+     * Key Security Decisions:
+     * - Denormalization: Fields like `creatorId` and `surveyId` are stored directly on documents to avoid 
+     *   expensive `get()` calls and ensure rules are performant.
+     * - Structural Segregation: Private drafts and published content are stored in separate top-level 
+     *   collections to simplify list operations and prevent accidental data leakage.
+     * - Prototyping Flexibility: Rules focus on "Who can access what" rather than "Is the data type correct," 
+     *   allowing the frontend to iterate without constant rules updates.
+     */
+
+    // --- Global Helper Functions ---
+
+    /** @description Checks if the request is from an authenticated user. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the user ID in the path or document matches the authenticated user. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** @description Checks if the authenticated user has global administrative privileges. */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /** @description Combines ownership check with document existence for updates and deletes. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for user profiles. Users manage their own profiles; Admins have full access.
+     * @path /userProfiles/{userId}
+     * @allow (get) Authenticated user viewing their own profile.
+     * @deny (list) Anonymous user attempting to list all profiles.
+     * @principle Ownership-based access with administrative override.
+     */
+    match /userProfiles/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Administrative roles collection. Used for rule-level authorization only.
+     * @path /roles_admin/{adminId}
+     * @allow (get) An admin checking their own status.
+     * @deny (write) Any client attempting to grant themselves admin rights.
+     * @principle Existence-over-content model for global roles.
+     */
+    match /roles_admin/{adminId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false; 
+    }
+
+    /**
+     * @description User-uploaded documents for AI parsing. Private to the creator.
+     * @path /users/{userId}/documents/{documentId}
+     * @allow (create) User uploading a document and setting themselves as creator.
+     * @deny (update) Changing the creatorId to another user.
+     * @principle Authorization independence via path-based ownership.
+     */
+    match /users/{userId}/documents/{documentId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.creatorId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.creatorId == resource.data.creatorId;
+      allow delete: if isExistingOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description User-created surveys (Drafts/Editable). Private to the creator.
+     * @path /users/{userId}/surveys/{surveyId}
+     * @allow (list) Creator viewing their list of surveys.
+     * @deny (get) Another user trying to read a private draft.
+     * @principle Structural segregation of private and public data.
+     */
+    match /users/{userId}/surveys/{surveyId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.creatorId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.creatorId == resource.data.creatorId;
+      allow delete: if isExistingOwner(userId) || isAdmin();
+
+      /**
+       * @description Questions belonging to a survey.
+       * @path /users/{userId}/surveys/{surveyId}/questions/{questionId}
+       */
+      match /questions/{questionId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && request.resource.data.surveyId == surveyId;
+        allow update: if isExistingOwner(userId) && request.resource.data.surveyId == resource.data.surveyId;
+        allow delete: if isExistingOwner(userId) || isAdmin();
+
+        /**
+         * @description Answer options for a specific question.
+         * @path /users/{userId}/surveys/{surveyId}/questions/{questionId}/answerOptions/{optionId}
+         */
+        match /answerOptions/{optionId} {
+          allow get, list: if isOwner(userId) || isAdmin();
+          allow create: if isOwner(userId) && request.resource.data.questionId == questionId;
+          allow update: if isExistingOwner(userId) && request.resource.data.questionId == resource.data.questionId;
+          allow delete: if isExistingOwner(userId) || isAdmin();
+        }
+      }
+
+      /**
+       * @description Responses submitted for a specific survey. 
+       * Owners can see all; respondents can create but not read others.
+       * @path /users/{userId}/surveys/{surveyId}/responses/{responseId}
+       */
+      match /responses/{responseId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if true; // Public access for survey respondents
+        allow update, delete: if isExistingOwner(userId) || isAdmin();
+
+        /**
+         * @description Individual answers within a response.
+         */
+        match /answers/{answerId} {
+          allow get, list: if isOwner(userId) || isAdmin();
+          allow create: if true;
+          allow update, delete: if isExistingOwner(userId) || isAdmin();
+        }
+
+        /**
+         * @description AI-detected flags for response quality.
+         */
+        match /flags/{flagId} {
+          allow get, list: if isOwner(userId) || isAdmin();
+          allow create: if isAdmin(); // Usually created by backend AI logic
+          allow update, delete: if isAdmin() || isExistingOwner(userId);
+        }
+      }
+    }
+
+    /**
+     * @description Publicly accessible surveys. Denormalized for respondent performance.
+     * @path /publishedSurveys/{surveyId}
+     * @allow (get) Any user (including anonymous) reading the survey content.
+     * @deny (create) Anonymous user attempting to publish a survey.
+     * @principle Public read with owner-only writes.
+     */
+    match /publishedSurveys/{surveyId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.creatorId == request.auth.uid;
+      allow update: if isAdmin() || isExistingOwner(resource.data.creatorId);
+      allow delete: if isAdmin() || isExistingOwner(resource.data.creatorId);
+    }
+
+    /**
+     * @description Resource usage quotas. Managed by system/admins, viewable by user.
+     * @path /users/{userId}/quotas/{quotaId}
+     * @allow (get) User checking their own usage limits.
+     * @deny (create) User trying to increase their own quota.
+     * @principle Admin-only writes for sensitive account attributes.
+     */
+    match /users/{userId}/quotas/{quotaId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Financial transaction history. Read-only for users once created.
+     * @path /users/{userId}/paymentTransactions/{transactionId}
+     * @allow (get) User viewing their purchase history.
+     * @deny (delete) Any user attempting to remove a transaction record.
+     * @principle Relational integrity and auditable history.
+     */
+    match /users/{userId}/paymentTransactions/{transactionId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isAdmin() || (isOwner(userId) && request.resource.data.userId == userId);
+      allow update, delete: if isAdmin();
+    }
+  }
+}
